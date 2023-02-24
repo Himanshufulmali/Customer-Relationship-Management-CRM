@@ -33,7 +33,7 @@ else{
     const user = await User.create({
     name : "admin", 
     email : "str.piyush@gmail.com",   
-    password : "Himanshu00",
+    password : process.env.password,
     userType : "ADMIN"
   });
   console.log(`Admin has been created ${user}`); 
