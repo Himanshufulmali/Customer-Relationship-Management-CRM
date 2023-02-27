@@ -67,7 +67,7 @@ exports.signup = async(req,res) => {
     topic,
     messages : [{
         value : `new user signed up
-        ${response}`
+        ${JSON.stringify(response)}`
     }]
  
 })
