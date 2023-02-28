@@ -1,9 +1,10 @@
 const mongoose = require("mongoose");
-const autoId = require("mongoose-sequence")(mongoose);
 
 const User = new mongoose.Schema({
    userId : {
-     type : Number 
+     type : String,
+     required : true,
+     unique : true
    },
     name : {
         type : String, 
@@ -12,7 +13,7 @@ const User = new mongoose.Schema({
     },
     email : {
         type : String,
-        required : true,
+        required : true, 
         unique : true,
         
     },
@@ -36,6 +37,5 @@ const User = new mongoose.Schema({
     timestamps : true
 })
 
-User.plugin(autoId,{inc_field : 'userId'})
 
 module.exports = mongoose.model('user',User);  

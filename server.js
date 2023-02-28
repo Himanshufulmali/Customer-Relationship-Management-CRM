@@ -23,7 +23,7 @@ db.once('open', () => {
 
 const init = async() =>{
     try{
-    const user = await User.findOne({name : "admin"});
+    const user = await User.findOne({userId : "admin"});
     
     if(user){
    console.log(`Admin is already present`);
@@ -31,13 +31,14 @@ const init = async() =>{
 }
 else{ 
     const user = await User.create({
-    name : "admin", 
+    userId : "admin",    
+    name : "Himanshu", 
     email : "str.piyush@gmail.com",   
     password : process.env.password,
     userType : "ADMIN"
   });
   console.log(`Admin has been created ${user}`); 
-}  
+}   
     }catch(err){
         console.log(`error while init()`);
     }

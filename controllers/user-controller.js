@@ -1,11 +1,10 @@
 const User = require('../models/user-model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const userRoute = require('../routes/user-route');
-const {Kafka} = require("kafkajs");
-
 
 const redis = require('redis');
+const { mapData } = require('../utils/map-data');
+
 const client = redis.createClient();
 const key = 'newData';
 const field = 'data';
@@ -20,12 +19,6 @@ const startRedis = async(err) => {
 } 
 startRedis();
 
-const brokers = ["localhost:9092"];
-const clientId = "Himanshu12";
-const topic = "my-collection";
-
-const kafka = new Kafka({brokers,clientId});
-const producer = kafka.producer();
  
 exports.signup = async(req,res) => {
     try{
@@ -35,6 +28,7 @@ exports.signup = async(req,res) => {
         }
 
     const userObj = {
+     userId : req.body.userId,
      name : req.body.name,
      email : req.body.email,
      password : bcrypt.hashSync(req.body.password,6),
@@ -44,37 +38,13 @@ exports.signup = async(req,res) => {
      
     const userCreated = await User.create(userObj);     
 
-    let response = {
-        mongoId : userCreated.id, 
-        userId : userCreated.userId,
-        name : userCreated.name,
-        email : userCreated.email, 
-        userType : userCreated.userType,
-        userStatus : userCreated.userStatus,
-        createdAt : userCreated.createdAt,
-        updatedAt : userCreated.updatedAt
-    }
+    let response = mapData(userCreated); 
 
     arr.push(response);
+
     await client.hSet(key,field,JSON.stringify(arr));
     console.log(`added new user to redis`);
-     
-    const startKafka = async() => {
-
-  await producer.connect();
-   
-  await producer.send({
-    topic,
-    messages : [{
-        value : `new user signed up
-        ${JSON.stringify(response)}`
-    }]
- 
-})
-
-    } 
-    startKafka();
-    
+      
     res.status(201).send(response);  
 
     }catch(err){
@@ -141,13 +111,9 @@ exports.findData = async(req,res) => {
 
       else{ 
         user = await User.find();
-
-    //    arr.push(user);
-    //    await client.hSet(key,field,JSON.stringify(arr));
-    //    console.log(`set cache`);
       }
-    
-        res.status(200).send(user.map((data) => {
+
+      let response = user.map((data) => {
         return{
         mongoId : data.id,
         userId : data.userId, 
@@ -157,8 +123,13 @@ exports.findData = async(req,res) => {
         userStatus : data.userStatus,
         createdAt : data.createdAt,
         updatedAt : data.updatedAt
+        }})
+        
+        await client.hSet(key,field,JSON.stringify(response));
 
-        }})); 
+        console.log(`set cache`);
+
+        res.status(200).send(response); 
 
     }catch(err){
    res.status(500).send(`error in finding data ${err}`);
@@ -168,47 +139,29 @@ exports.findData = async(req,res) => {
 exports.findWithId = async(req,res) => {
     try{
    const user = await User.findOne({userId : req.params.userId});
-   
-   res.status(200).send({
-   
-    mongoId : user.id,
-    userId : user.userId,
-    name : user.name,
-    email : user.email,
-    userType : user.userType,
-    userStatus : user.userStatus,
-    createdAt : user.createdAt,
-    updatedAt : user.updatedAt
 
-   })
+   let response = mapData(user);
+   
+   res.status(200).send(response);
 
     }catch(err){
         res.status(500).send(`error while findWithId ${err}`);
     }
 }
 
-exports.updateData = async(req,res) => {
+exports.updateData = async(req,res) => { 
     try{
         const user = await User.findOne({userId : req.params.userId});
 
-        req.name = req.body.name ? req.body.name : user.name;
-        req.email = req.body.email ? req.body.email : userRoute.email;
-        req.password = req.body.password ? bcrypt.hashSync(req.body.password) : user.password;
+        user.name = req.body.name ? req.body.name : user.name;
+        user.email = req.body.email ? req.body.email : user.email;
+        user.password = req.body.password ? bcrypt.hashSync(req.body.password) : user.password;
        
         await user.save();
        
+        let response = mapData(user);
     
-        res.status(201).send({
-             mongoId : user.id,
-             userId : user.userId,
-             name : user.name,
-             email : user.email,
-             userType : user.userType,
-             userStatus : user.userStatus,
-             createdAt : user.createdAt,
-             updatedAt : user.updatedAt
-    
-            });
+        res.status(201).send(response);
 
     }catch(err){
    res.status(500).send(`error while updating data ${err}`);
@@ -220,7 +173,7 @@ exports.deleteData = async(req,res) => {
 
     await User.deleteOne({userId : req.params.userId});
     
-    res.status(200).send(`user deleted successfully`);
+    res.status(200).send(`user deleted successfully ${req.params.userId}`);
 
     }catch(err){
         res.status(500).send(`error while deleting data ${err}`);  

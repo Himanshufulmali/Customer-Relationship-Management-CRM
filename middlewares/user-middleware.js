@@ -4,14 +4,23 @@ const User = require("../models/user-model");
 exports.signupMw = async(req,res,next) => {
     try{
            
-        const user = await User.findOne({email : req.body.email});
-    
-    if(!req.body.name){
+    const user = await User.findOne({email : req.body.email});
+    const users = await User.findOne({userId : req.body.userId});
+    if(!req.body.userId){
+        return res.status(400).send(`userId is not provided`);
+    }
+    if(req.body.userId === "admin"){
+        return res.status(400).send(`userId cannot be admin for security purpose`);
+    }
+    if(users !== null){ 
+        return res.status(400).send(`userId is taken`);
+    }  
+     
+ 
+    if(!req.body.name){ 
      return res.status(400).send(`Name is not provided`);
     }
-    if(req.body.name === "admin"){
-        return res.status(400).send(`user name cannot be admin for security purpose`);
-    }
+    
     if(!req.body.email){
         return res.status(400).send(`Email cant be empty`);
     }
@@ -31,6 +40,7 @@ exports.signupMw = async(req,res,next) => {
     if(!req.body.password){
         return res.status(400).send(`Password should be provided`);
     }
+
     if(!checkingEmail(req.body.email)){
         return res.status(400).send(`Email is not valid`);
     }
@@ -40,12 +50,12 @@ exports.signupMw = async(req,res,next) => {
  next();
  
 }catch(err){
-    res.status(500).send(`error in signupMw`);
+    res.status(500).send(`error in signupMw ${err}`);
 }
 }
 
 const checkingEmail = (email) => {
-    String(email).toLowerCase().match(/^[a-zA-Z0-9.! #$%&'*+/=? ^_`{|}~-]+@[a-zA-Z0-9-]+(?:\. [a-zA-Z0-9-]+)*$/)
+   return String(email).toLowerCase().match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
 }
 
 
