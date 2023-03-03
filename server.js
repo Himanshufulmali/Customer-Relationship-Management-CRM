@@ -2,6 +2,7 @@ const express = require("express");
 const { PORT } = require("./configs/server-config");
 const mongoose = require('mongoose');
 const User = require("./models/user-model");
+const bcrypt = require('bcryptjs');
 
 
 const app = express();
@@ -34,18 +35,18 @@ else{
     userId : "admin",    
     name : "Himanshu", 
     email : "str.piyush@gmail.com",   
-    password : process.env.password,
+    password : bcrypt.hashSync(process.env.password),
     userType : "ADMIN"
   });
   console.log(`Admin has been created ${user}`); 
 }   
     }catch(err){
-        console.log(`error while init()`);
+        console.log(`error while init()`);  
     }
 } 
 
 const mongodata = () => { 
-
+ 
  } 
  mongodata();  
 

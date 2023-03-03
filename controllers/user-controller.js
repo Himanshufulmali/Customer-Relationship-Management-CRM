@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const redis = require('redis');
 const { mapData } = require('../utils/map-data');
+const { startKafka } = require('../utils/kafka-function');
 
 const client = redis.createClient();
 const key = 'newData';
@@ -19,7 +20,7 @@ const startRedis = async(err) => {
 } 
 startRedis();
 
- 
+
 exports.signup = async(req,res) => {
     try{
 
@@ -40,10 +41,15 @@ exports.signup = async(req,res) => {
 
     let response = mapData(userCreated); 
 
-    arr.push(response);
+    //* intetionally paused redis it was giving issue while query params as we're directly pushingb in redis
 
-    await client.hSet(key,field,JSON.stringify(arr));
-    console.log(`added new user to redis`);
+    // arr.push(response);
+
+    // await client.hSet(key,field,JSON.stringify(arr));
+    // console.log(`added new user to redis`);
+
+    let msg = `A new user Signedup`;
+    startKafka(msg,response);
       
     res.status(201).send(response);  
 
@@ -67,6 +73,10 @@ exports.signin = async(req,res) => {
         return res.status(400).send(`password is incorrect`);
     }
 
+    if(user.userStatus == "PENDING"){
+        return res.status(400).send(`You're not approved yet, please wait sometime`);
+    }
+
     const token = jwt.sign({ 
         id : user.email
     },process.env.secret,{
@@ -85,6 +95,9 @@ exports.signin = async(req,res) => {
         accessToken : token
     }
 
+    let msg = `A new user Signedin`;
+    startKafka(msg,response);
+
     res.status(200).send(response);
 }catch(err){ 
     res.status(500).send(`error while signin ${err}`);
@@ -96,21 +109,31 @@ exports.findData = async(req,res) => {
     try{
 
         let nameQ = req.query.name;
+        let statusQ = req.query.userStatus;
+        let typeQ = req.query.userType;
+
         let user;
         
-        const getRedisData = await client.hGet(key,field);
+         const getRedisData = await client.hGet(key,field);
         
         if(getRedisData){
           user = JSON.parse(getRedisData);
           console.log(`got data from redis`);
         }
-
         else if(nameQ){
             user = await User.find({name : nameQ})
+        } 
+        else if(statusQ){
+            user = await User.find({userStatus : statusQ})
+            // console.log(userStatus,statusQ);
+        }
+        else if(typeQ){
+            user = await User.find({userType : typeQ}) 
         }
 
       else{ 
         user = await User.find();
+       
       }
 
       let response = user.map((data) => {
@@ -124,10 +147,12 @@ exports.findData = async(req,res) => {
         createdAt : data.createdAt,
         updatedAt : data.updatedAt
         }})
-        
-        await client.hSet(key,field,JSON.stringify(response));
+         
+        //  arr.push(await client.hSet(key,field,JSON.stringify(response)));
+        //  console.log(`set cache`);
 
-        console.log(`set cache`);
+       let msg = `find call is responded with`;
+       startKafka(msg,response);
 
         res.status(200).send(response); 
 
@@ -138,9 +163,12 @@ exports.findData = async(req,res) => {
 
 exports.findWithId = async(req,res) => {
     try{
-   const user = await User.findOne({userId : req.params.userId});
+   const user = await User.findOne({userId : req.params.userId}); 
 
    let response = mapData(user);
+
+   let msg = `find with id is responded with`;
+   startKafka(msg,response);
    
    res.status(200).send(response);
 
@@ -156,10 +184,15 @@ exports.updateData = async(req,res) => {
         user.name = req.body.name ? req.body.name : user.name;
         user.email = req.body.email ? req.body.email : user.email;
         user.password = req.body.password ? bcrypt.hashSync(req.body.password) : user.password;
-       
+        user.userType = req.body.userType ? req.body.userType : user.userType;
+        user.userStatus = req.body.userStatus ? req.body.userStatus : user.userStatus;
+
         await user.save();
        
         let response = mapData(user);
+
+        let msg = `User updated info`;
+        startKafka(msg,response);
     
         res.status(201).send(response);
 
@@ -171,12 +204,15 @@ exports.updateData = async(req,res) => {
 exports.deleteData = async(req,res) => {
     try{
 
-    await User.deleteOne({userId : req.params.userId});
-    
+     await User.deleteOne({userId : req.params.userId});
+
+     let msg = `user deleted his account`;
+     startKafka(msg,req.params.userId);
+
     res.status(200).send(`user deleted successfully ${req.params.userId}`);
 
     }catch(err){
         res.status(500).send(`error while deleting data ${err}`);  
-    }
+    } 
    
 }
