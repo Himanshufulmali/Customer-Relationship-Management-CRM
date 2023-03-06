@@ -6,13 +6,11 @@ const ticket = new mongoose.Schema({
         type : String,
         required : true
     },
-
     tickePriority : {
     type : Number,
     required : true,
     default : 4
     },
-
     description : {
         type : String,
         required : true

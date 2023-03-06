@@ -41,12 +41,10 @@ exports.signup = async(req,res) => {
 
     let response = mapData(userCreated); 
 
-    //* intetionally paused redis it was giving issue while query params as we're directly pushingb in redis
+    arr.push(response);
 
-    // arr.push(response);
-
-    // await client.hSet(key,field,JSON.stringify(arr));
-    // console.log(`added new user to redis`);
+    await client.hSet(key,field,JSON.stringify(arr));
+    console.log(`added new user to redis`);
 
     let msg = `A new user Signedup`;
     startKafka(msg,response);
@@ -115,21 +113,22 @@ exports.findData = async(req,res) => {
         let user;
         
          const getRedisData = await client.hGet(key,field);
-        
-        if(getRedisData){
-          user = JSON.parse(getRedisData);
-          console.log(`got data from redis`);
-        }
-        else if(nameQ){
+       
+        if(nameQ){
             user = await User.find({name : nameQ})
         } 
         else if(statusQ){
             user = await User.find({userStatus : statusQ})
-            // console.log(userStatus,statusQ);
+            // console.log(userStatus,statusQ); 
         }
         else if(typeQ){
             user = await User.find({userType : typeQ}) 
         }
+         
+       else if(getRedisData){
+            user = JSON.parse(getRedisData);
+            console.log(`got data from redis`);
+          }
 
       else{ 
         user = await User.find();
@@ -154,12 +153,12 @@ exports.findData = async(req,res) => {
        let msg = `find call is responded with`;
        startKafka(msg,response);
 
-        res.status(200).send(response); 
+        res.status(200).send(response);  
 
-    }catch(err){
+    }catch(err){  
    res.status(500).send(`error in finding data ${err}`);
     }
-}
+} 
 
 exports.findWithId = async(req,res) => {
     try{
