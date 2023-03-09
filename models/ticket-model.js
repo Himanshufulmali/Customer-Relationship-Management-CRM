@@ -29,9 +29,8 @@ const ticket = new mongoose.Schema({
         type : String
     }
 },{
-    timestamps : true
-},{
-     versionKey : false /// this will ensure that __v is not created by mongoose
+    timestamps : true, 
+    versionKey : false /// this will ensure that __v is not created by mongoose
 })
 
 

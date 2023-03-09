@@ -51,6 +51,7 @@ const mongodata = () => {
  mongodata();  
 
 require("./routes/user-route")(app);
+require("./routes/ticket-route")(app);
 
  
 const start = async(err) => {

@@ -33,6 +33,13 @@ const User = new mongoose.Schema({
         required : true,
         default : "APPROVED",
         enum : ["APPROVED","PENDING"]
+    },
+    ticketsCreated : {
+        type : [mongoose.SchemaType.ObjectId],
+        ref : "Ticket"
+    },
+    ticketsAssigned : {
+        type : [mongoose.SchemaTypes.ObjectId]
     }
  
 },{
