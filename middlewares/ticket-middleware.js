@@ -39,13 +39,15 @@ exports.ticketUpdateValidation = async(req,res,next) => {
          return res.status(401).send(`Only Admin is allowed to reassign ticket`);
         }
          
-        
+        if(req.body.assignee){
+
         const newEngineer = await User.findOne({userId : req.body.assignee});
         
         if(newEngineer == null){
             return res.status(401).send(`Engineer userId passed is wrong`);
         }
 
+    }
         next();
 
     }catch(err){
