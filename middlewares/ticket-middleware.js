@@ -6,7 +6,7 @@ exports.ticketUpdateValidation = async(req,res,next) => {
     try{
 
         const user = await User.findOne({email : req.email});
-        const ticket = await Ticket.findOne({_id : req.params._id});
+        const ticket = await Ticket.findOne({_id : req.params.id});
 
         if(user.userType == "CUSTOMER"){
         const reporter = ticket.reporter;
@@ -26,23 +26,26 @@ exports.ticketUpdateValidation = async(req,res,next) => {
 
         if(user.userId !== reporter && user.userId !== assignee){
          return res.status(403).send(`You cant update as you're not reporter,engineer or admin`);
-        }
-        
-        }
+        }  
+      }
 
-        if(req.body.assignee !== undefined && user.userType !== "ADMIN"){
-         return res.status(403).send(`You cant update as you're not the admin`);
+        /**
+         * we're checking for admin to assign new engineer
+         * otherwise request should not process
+         */
+
+
+        if(req.body.assignee && user.userType !== "ADMIN"){
+         return res.status(401).send(`Only Admin is allowed to reassign ticket`);
         }
          
-        if(req.body.assignee !== undefined){
-
+        
         const newEngineer = await User.findOne({userId : req.body.assignee});
         
         if(newEngineer == null){
-            return res.status(403).send(`userId passed is wrong`);
+            return res.status(401).send(`Engineer userId passed is wrong`);
         }
 
-    }
         next();
 
     }catch(err){
