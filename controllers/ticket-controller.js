@@ -29,9 +29,7 @@ exports.createTicket = async(req,res) => {
 
 
          if(ticketCreated){
-            const customer = await User.findOne({
-                email : req.email 
-            })
+            const customer = await User.findOne({email : req.email})
 
             customer.ticketsCreated.push(ticketCreated._id);
             await customer.save();
@@ -56,20 +54,20 @@ exports.getAllTickets = async(req,res) => {
 
         const user = await User.findOne({email : req.email});
         const queryObj = {};
-        const ticketsCreated = user.ticketsCreated;
-        const ticketsAssigned = user.ticketsAssigned;
+        const reporter = user.ticketsCreated;
+        const assignee = user.ticketsAssigned;
 
         if(user.userType == "CUSTOMER"){
             
-            if(!ticketsCreated){
+            if(!reporter){
                 return res.status(200).send(`no tickets are created by user`);
             }
             
-            queryObj['_id'] = { $in : ticketsCreated };
+            queryObj['_id'] = { $in : reporter };
 
         }
        else if(user.userType == "ENGINEER"){
-            queryObj['$or'] = [{"_id" : {$in : ticketsCreated}}, {"_id" : {$in : ticketsAssigned}}];  
+            queryObj['$or'] = [{"_id" : {$in : reporter}}, {"_id" : {$in : assignee}}];  
 
         }
          
@@ -80,5 +78,25 @@ exports.getAllTickets = async(req,res) => {
     }catch(err){
         res.status(500).send(`error in getAllTickets ${err}`);
         console.log(`error in getAllTickets ${err}`);
+    }
+}
+
+
+exports.updateTicket = async(req,res) => {
+    try{
+        const ticket = await Ticket.findOne({_id : req.params.id});
+
+        ticket.title = req.body.title ? req.body.title : ticket.title;
+        ticket.description = req.body.description ? req.body.description : ticket.description;
+        ticket.status = req.body.status ? req.body.status : ticket.status;
+        ticket.ticketPriority = req.body.ticketPriority ? req.body.ticketPriority : ticket.ticketPriority;
+        ticket.assignee = req.body.assignee ? req.body.assignee : ticket.assignee;
+        
+        await ticket.save();
+
+        res.status(201).send(ticket);
+
+    }catch(err){
+        res.status(500).send(`error happened in updateTicket ${err}`);
     }
 }
