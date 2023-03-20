@@ -48,7 +48,7 @@ else{
 const mongodata = () => { 
  
  } 
- mongodata();  
+ mongodata();   
 
 require("./routes/user-route")(app);
 require("./routes/ticket-route")(app);
