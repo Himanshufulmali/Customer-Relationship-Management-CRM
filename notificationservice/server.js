@@ -8,6 +8,7 @@ const app = express();
 app.use(express.json({urlencoded : {extended : true}}));
 
 
+require("./routes/notification-route")(app);
 
 
 const notificationServer = async(err) => {
