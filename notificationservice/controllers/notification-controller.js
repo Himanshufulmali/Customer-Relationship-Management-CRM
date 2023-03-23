@@ -6,7 +6,7 @@ exports.createNotification = async(req,res) => {
        const notificationObj = {
            
         subject : req.body.subject,
-        recepientEmail : req.body.recepientEmail,
+        recepientEmail : req.body.recepientEmail, //// you can provide multiple emails
         content : req.body.content,
         requester : req.body.requester,
         status : req.body.status
@@ -27,7 +27,7 @@ exports.createNotification = async(req,res) => {
 
 exports.getNotifications = async(req,res) => {
     try{
-        const notifications = await Notification.find();
+        const notifications = await Notification.findOne({_id : req.params.id});
 
         res.status(200).send(notifications);
 
